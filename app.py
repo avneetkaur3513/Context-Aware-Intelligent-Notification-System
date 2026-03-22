@@ -1,4 +1,6 @@
 import os
+import sys
+import subprocess
 
 import pandas as pd
 import streamlit as st
@@ -6,6 +8,58 @@ import streamlit as st
 from utils import predict_notification_action, plot_class_distribution
 
 DATA_PATH = os.path.join("data", "notifications_dataset.csv")
+MODEL_PATH = os.path.join("model", "notification_model.pkl")
+PREPROCESSOR_PATH = os.path.join("model", "preprocessor.pkl")
+
+
+def run_script(script_name: str) -> subprocess.CompletedProcess:
+    """
+    Run a python script using the same interpreter that runs Streamlit.
+    This avoids issues with venv vs system python.
+    """
+    return subprocess.run(
+        [sys.executable, script_name],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def ensure_artifacts() -> None:
+    """
+    Ensures dataset + model artifacts exist.
+    Runs generate_data.py / train_model.py only if needed.
+
+    Uses st.session_state so Streamlit reruns don't retrigger training.
+    """
+    if st.session_state.get("artifacts_ready", False):
+        return
+
+    st.sidebar.header("Setup Status")
+
+    # 1) Ensure dataset exists
+    if not os.path.exists(DATA_PATH):
+        st.sidebar.info("Dataset not found. Generating synthetic dataset...")
+        result = run_script("generate_data.py")
+        if result.returncode != 0:
+            st.sidebar.error("Failed to generate dataset.")
+            st.sidebar.code(result.stderr or result.stdout)
+            # Stop app because prediction won't work without data
+            st.stop()
+        st.sidebar.success("Dataset generated successfully.")
+
+    # 2) Ensure model artifacts exist
+    if not (os.path.exists(MODEL_PATH) and os.path.exists(PREPROCESSOR_PATH)):
+        st.sidebar.info("Model not found. Training ML model...")
+        result = run_script("train_model.py")
+        if result.returncode != 0:
+            st.sidebar.error("Failed to train model.")
+            st.sidebar.code(result.stderr or result.stdout)
+            st.stop()
+        st.sidebar.success("Model trained and saved successfully.")
+
+    st.session_state["artifacts_ready"] = True
+    st.sidebar.success("All required files are ready.")
 
 
 def load_dataset() -> pd.DataFrame:
@@ -16,6 +70,9 @@ def load_dataset() -> pd.DataFrame:
 
 def main():
     st.set_page_config(page_title="Context-Aware Notifications", layout="wide")
+
+    # Auto-setup (generate data / train model if missing)
+    ensure_artifacts()
 
     st.title("Context-Aware Network-Based Notification System")
     st.caption("AI + Networking Demo Project")
@@ -70,7 +127,6 @@ to decide whether a notification should be **sent immediately**, **delayed**, or
                 st.markdown("---")
                 st.subheader("Prediction Result")
 
-                # Highlighted action box
                 if action == "send_now":
                     st.success(f"Final Action: **{action}**")
                 elif action == "delay":
@@ -88,7 +144,7 @@ to decide whether a notification should be **sent immediately**, **delayed**, or
                 st.info(explanation)
 
             except Exception as e:
-                st.error("Could not generate prediction. Ensure you have generated data and trained the model.")
+                st.error("Could not generate prediction.")
                 st.code(str(e))
 
         st.markdown("---")
@@ -105,9 +161,7 @@ to decide whether a notification should be **sent immediately**, **delayed**, or
         st.subheader("Dataset Insights")
 
         if df.empty:
-            st.warning(
-                "Dataset not found yet. Run `python generate_data.py` to create it, then `python train_model.py`."
-            )
+            st.warning("Dataset is empty or missing.")
         else:
             st.write("Preview:")
             st.dataframe(df.head(10), use_container_width=True)
@@ -129,8 +183,6 @@ to decide whether a notification should be **sent immediately**, **delayed**, or
    - `send_now`
    - `delay`
    - `suppress`
-
-This makes the solution both **interpretable** (rules) and **adaptive** (ML).
 """
         )
 
