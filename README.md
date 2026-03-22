@@ -175,6 +175,7 @@ streamlit run app.py
 - working + work + high priority → likely `send_now`
 
 Note: predictions vary slightly because the dataset is synthetic and includes some realistic noise.
+<img width="1081" height="786" alt="4eb54ec7d17ebfb42168632b74d684695f940012128ca1cd607bb015" src="https://github.com/user-attachments/assets/3bba4394-6cc9-46f9-8016-7b393e3c77f4" />
 
 ---
 
