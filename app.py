@@ -12,6 +12,158 @@ MODEL_PATH = os.path.join("model", "notification_model.pkl")
 PREPROCESSOR_PATH = os.path.join("model", "preprocessor.pkl")
 
 
+def inject_custom_styles() -> None:
+    st.markdown(
+        """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Manrope:wght@400;600;700&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'Manrope', sans-serif;
+}
+
+.stApp {
+    background:
+        radial-gradient(circle at 10% 20%, rgba(255, 166, 158, 0.22), transparent 35%),
+        radial-gradient(circle at 90% 15%, rgba(125, 211, 252, 0.22), transparent 32%),
+        radial-gradient(circle at 80% 85%, rgba(134, 239, 172, 0.18), transparent 32%),
+        linear-gradient(150deg, #f8fafc 0%, #eef2ff 52%, #f0fdfa 100%);
+}
+
+h1, h2, h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: 0.2px;
+}
+
+.hero-wrap {
+    padding: 1.2rem 1.4rem;
+    border-radius: 16px;
+    margin: 0.4rem 0 1.1rem 0;
+    color: #0f172a;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.72));
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    box-shadow: 0 10px 35px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(4px);
+}
+
+.hero-title {
+    margin: 0;
+    font-size: 1.95rem;
+    line-height: 1.2;
+}
+
+.hero-subtitle {
+    margin: 0.35rem 0 0 0;
+    color: #334155;
+    font-size: 1.02rem;
+}
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(140px, 1fr));
+    gap: 0.65rem;
+    margin: 0.55rem 0 1rem 0;
+}
+
+.metric-card {
+    border-radius: 14px;
+    padding: 0.9rem;
+    color: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.metric-card .label {
+    margin: 0;
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.metric-card .value {
+    margin: 0.2rem 0 0 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.glass-panel {
+    background: rgba(255, 255, 255, 0.74);
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 14px;
+    padding: 0.95rem 1rem;
+    margin-bottom: 0.9rem;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+div[data-testid="stForm"] {
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 14px;
+    padding: 0.9rem 0.95rem;
+    background: rgba(255, 255, 255, 0.78);
+}
+
+.stButton > button,
+div[data-testid="stFormSubmitButton"] > button {
+    background: linear-gradient(110deg, #0ea5e9, #14b8a6);
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    padding: 0.55rem 1rem;
+    font-weight: 600;
+    box-shadow: 0 8px 18px rgba(20, 184, 166, 0.28);
+}
+
+.stButton > button:hover,
+div[data-testid="stFormSubmitButton"] > button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(14, 165, 233, 0.35);
+}
+
+@media (max-width: 860px) {
+    .hero-title {
+        font-size: 1.5rem;
+    }
+
+    .metric-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+""",
+        unsafe_allow_html=True,
+    )
+
+
+def render_header_cards(df: pd.DataFrame) -> None:
+    total_samples = len(df) if not df.empty else 0
+    unique_contexts = df.drop(columns=["action"]).drop_duplicates().shape[0] if not df.empty else 0
+    classes = df["action"].nunique() if not df.empty else 3
+
+    st.markdown(
+        f"""
+<div class="hero-wrap">
+  <h1 class="hero-title">Context-Aware Network-Based Notification System</h1>
+  <p class="hero-subtitle">Hybrid AI dashboard that blends network awareness with user context for smarter notification timing.</p>
+</div>
+
+<div class="metric-grid">
+  <div class="metric-card" style="background: linear-gradient(135deg, #fde68a, #fca5a5);">
+    <p class="label">Dataset Size</p>
+    <p class="value">{total_samples}</p>
+  </div>
+  <div class="metric-card" style="background: linear-gradient(135deg, #93c5fd, #67e8f9);">
+    <p class="label">Unique Context States</p>
+    <p class="value">{unique_contexts}</p>
+  </div>
+  <div class="metric-card" style="background: linear-gradient(135deg, #a7f3d0, #86efac);">
+    <p class="label">Decision Classes</p>
+    <p class="value">{classes}</p>
+  </div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+
+
 def run_script(script_name: str) -> subprocess.CompletedProcess:
     """
     Run a python script using the same interpreter that runs Streamlit.
@@ -74,21 +226,24 @@ def main():
     # Auto-setup (generate data / train model if missing)
     ensure_artifacts()
 
-    st.title("Context-Aware Network-Based Notification System")
-    st.caption("AI + Networking Demo Project")
+    inject_custom_styles()
+
+    df = load_dataset()
+    render_header_cards(df)
 
     st.markdown(
         """
-**Overview:**  
-This project demonstrates a **hybrid decision system** that uses **user context** and **network strength**
-to decide whether a notification should be **sent immediately**, **delayed**, or **suppressed**.
-
-- **Rule engine** handles obvious safety/urgency cases (e.g., *emergency + high priority*).
-- **Machine Learning model** handles the remaining non-obvious cases using a trained classifier.
-"""
+<div class="glass-panel">
+<strong>Overview:</strong><br>
+This project demonstrates a <strong>hybrid decision system</strong> that uses <strong>user context</strong> and <strong>network strength</strong>
+to decide whether a notification should be <strong>sent immediately</strong>, <strong>delayed</strong>, or <strong>suppressed</strong>.
+<br><br>
+- <strong>Rule engine</strong> handles obvious safety/urgency cases (e.g., emergency + high priority).<br>
+- <strong>Machine Learning model</strong> handles remaining non-obvious cases using a trained classifier.
+</div>
+""",
+        unsafe_allow_html=True,
     )
-
-    df = load_dataset()
 
     col_left, col_right = st.columns([1.05, 1.0], gap="large")
 
@@ -96,16 +251,16 @@ to decide whether a notification should be **sent immediately**, **delayed**, or
         st.subheader("Input Context (User + Network)")
 
         with st.form("prediction_form"):
-            time_of_day = st.selectbox("time_of_day", ["morning", "afternoon", "evening", "night"])
-            activity = st.selectbox("activity", ["driving", "studying", "working", "free_time", "sleeping"])
-            network_strength = st.selectbox("network_strength", ["weak", "medium", "strong"])
+            time_of_day = st.selectbox("Time of Day", ["morning", "afternoon", "evening", "night"])
+            activity = st.selectbox("Current Activity", ["driving", "studying", "working", "free_time", "sleeping"])
+            network_strength = st.selectbox("Network Strength", ["weak", "medium", "strong"])
             notification_type = st.selectbox(
-                "notification_type", ["social", "work", "promotional", "reminder", "emergency"]
+                "Notification Type", ["social", "work", "promotional", "reminder", "emergency"]
             )
-            priority = st.selectbox("priority", ["low", "medium", "high"])
-            previous_response = st.selectbox("previous_response", ["opened", "ignored", "delayed"])
+            priority = st.selectbox("Priority", ["low", "medium", "high"])
+            previous_response = st.selectbox("Previous Response", ["opened", "ignored", "delayed"])
 
-            submitted = st.form_submit_button("Predict Notification Action")
+            submitted = st.form_submit_button("Predict Best Action")
 
         if submitted:
             input_dict = {
@@ -151,9 +306,9 @@ to decide whether a notification should be **sent immediately**, **delayed**, or
         st.subheader("Sample Use Cases (Quick Cards)")
         st.markdown(
             """
-- **Case 1:** driving + social + low priority → typically **suppress**  
-- **Case 2:** sleeping + reminder + medium priority → typically **delay**  
-- **Case 3:** working + work + high priority → typically **send_now**  
+    - **Case 1:** driving + social + low priority -> typically **suppress**  
+    - **Case 2:** sleeping + reminder + medium priority -> typically **delay**  
+    - **Case 3:** working + work + high priority -> typically **send_now**  
 """
         )
 
